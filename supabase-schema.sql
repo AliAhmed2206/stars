@@ -15,6 +15,7 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- Add role column if upgrading from v1 (safe to run multiple times)
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin'));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT '';
 
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
 CREATE POLICY "Public profiles are viewable by everyone"
@@ -153,6 +154,7 @@ ALTER TABLE tournaments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS format_id UUID REFERENCES game_formats(id);
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS max_participants INT DEFAULT 16;
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS settings JSONB DEFAULT '{}';
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS prizes TEXT DEFAULT '';  -- Admin sets prizes for winners
 -- Update status constraint to include 'open'
 ALTER TABLE tournaments DROP CONSTRAINT IF EXISTS tournaments_status_check;
 ALTER TABLE tournaments ADD CONSTRAINT tournaments_status_check CHECK (status IN ('upcoming', 'open', 'ongoing', 'completed'));

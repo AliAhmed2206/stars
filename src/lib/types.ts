@@ -3,6 +3,7 @@ export interface Profile {
   username: string
   avatar_url: string | null
   role: "user" | "admin"
+  bio: string | null
   created_at: string
 }
 
@@ -46,6 +47,7 @@ export interface Tournament {
   format_id: string | null
   name: string
   description: string | null
+  prizes: string | null
   start_date: string | null
   end_date: string | null
   status: "upcoming" | "open" | "ongoing" | "completed"
