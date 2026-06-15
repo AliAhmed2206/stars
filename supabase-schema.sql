@@ -290,17 +290,17 @@ END $$;
 
 -- Insert default games with images (skip if already exist)
 INSERT INTO games (name, category, icon, image_url, description) VALUES
-  ('PlayStation 5', 'playstation', '🎮', 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/playstation/playstation-plain.svg', 'Console tournaments — FC 26, Tekken, and more'),
-  ('FC 26', 'playstation', '⚽', 'https://upload.wikimedia.org/wikipedia/en/1/12/FC_25_cover.jpg', 'EA Sports FC 26 on PS5'),
-  ('Football 11v11', 'football', '🏟️', 'https://upload.wikimedia.org/wikipedia/en/4/44/Football_pitch.svg', 'Full 11-a-side football matches'),
-  ('Football 5v5', 'football', '⚽', 'https://upload.wikimedia.org/wikipedia/en/4/44/Football_pitch.svg', 'Small-sided 5-a-side football'),
-  ('Padel', 'padel', '🎾', 'https://upload.wikimedia.org/wikipedia/commons/1/1d/Padel_icon.png', 'Padel doubles tournaments'),
+  ('PlayStation 5', 'playstation', '🎮', 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=800&fit=crop', 'Console tournaments — FC 26, Tekken, and more'),
+  ('FC 26', 'playstation', '⚽', 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&fit=crop', 'EA Sports FC 26 on PS5'),
+  ('Football 11v11', 'football', '🏟️', 'https://images.unsplash.com/photo-1461896836934-bd45ba8fcf9b?w=800&fit=crop', 'Full 11-a-side football matches'),
+  ('Football 5v5', 'football', '⚽', 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&fit=crop', 'Small-sided 5-a-side football'),
+  ('Padel', 'padel', '🎾', 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&fit=crop', 'Padel doubles tournaments'),
   ('Brawl Stars', 'esports', '⭐', 'https://cdn.supercell.com/supercell.com/2412191423/supercell.com/images/1b62c33b3a89aaf238d19b7ebd977ca5/games_brawlstars_hero.png', '3v3 Brawl Ball, Gem Grab & Showdown'),
-  ('eFootball', 'esports', '⚽', 'https://upload.wikimedia.org/wikipedia/en/1/1e/EFootball_2024_logo.png', 'Konami eFootball competitive'),
-  ('FC Mobile', 'esports', '📱', 'https://upload.wikimedia.org/wikipedia/en/2/2f/FC_Mobile_2024_logo.jpg', 'EA FC Mobile — on your phone'),
-  ('Skrew', 'card_games', '🃏', 'https://upload.wikimedia.org/wikipedia/commons/6/64/Playing_cards_deck.svg', 'The classic Skrew card game'),
-  ('Casino (Poker)', 'card_games', '🃏', 'https://upload.wikimedia.org/wikipedia/commons/6/64/Playing_cards_deck.svg', 'Texas Hold''em Poker'),
-  ('Casino (Blackjack)', 'card_games', '🃏', 'https://upload.wikimedia.org/wikipedia/commons/6/64/Playing_cards_deck.svg', 'Classic Blackjack')
+  ('eFootball', 'esports', '⚽', 'https://images.unsplash.com/photo-1626523777575-488fd1aeaa68?w=800&fit=crop', 'Konami eFootball competitive'),
+  ('FC Mobile', 'esports', '📱', 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&fit=crop', 'EA FC Mobile — on your phone'),
+  ('Skrew', 'card_games', '🃏', 'https://images.unsplash.com/photo-1621285853634-8f0e94c63be1?w=800&fit=crop', 'The classic Skrew card game'),
+  ('Casino (Poker)', 'card_games', '🃏', 'https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=800&fit=crop', 'Texas Hold''em Poker'),
+  ('Casino (Blackjack)', 'card_games', '🃏', 'https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?w=800&fit=crop', 'Classic Blackjack')
 ON CONFLICT DO NOTHING;
 
 -- Insert default game formats (skip duplicates)

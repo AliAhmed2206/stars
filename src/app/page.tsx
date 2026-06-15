@@ -171,20 +171,22 @@ export default function Home() {
                 style={{ animationDelay: `${i * 0.1}s` }}
               >
                 <div className="absolute inset-0 bg-[#12121a] border border-white/5 rounded-2xl group-hover:border-white/20 transition-colors" />
-                <div className="relative p-5">
+                <div className="relative">
                   {game.image_url ? (
-                    <div className="w-full h-20 mb-4 rounded-xl overflow-hidden bg-white/5">
+                    <div className="h-32 overflow-hidden bg-white/5">
                       <img src={game.image_url} alt={game.name}
-                        className="w-full h-full object-contain p-2 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500"
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700"
                         onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }} />
                     </div>
                   ) : (
-                    <div className="w-full h-20 mb-4 rounded-xl bg-white/5 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-500">
+                    <div className="h-32 flex items-center justify-center text-4xl bg-white/5 group-hover:scale-110 transition-transform duration-500">
                       {gameEmojis[game.name] || game.icon || "🎮"}
                     </div>
                   )}
-                  <h3 className="font-bold text-white text-sm truncate">{game.name}</h3>
-                  <p className="text-xs text-gray-500 capitalize mt-1">{game.category.replace(/_/g, " ")}</p>
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#12121a] via-[#12121a]/80 to-transparent p-4 pt-8">
+                    <h3 className="font-bold text-white text-sm truncate">{game.name}</h3>
+                    <p className="text-xs text-gray-500 capitalize mt-0.5">{game.category.replace(/_/g, " ")}</p>
+                  </div>
                 </div>
               </Link>
             ))}

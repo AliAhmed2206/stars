@@ -10,7 +10,6 @@ import type { User as UserType } from "@supabase/supabase-js"
 
 const navItems = [
   { href: "/", label: "Home", icon: Sparkles },
-  { href: "/planner", label: "Planner", icon: CalendarDays },
   { href: "/championship", label: "Championship", icon: Trophy },
   { href: "/games", label: "Games", icon: Gamepad2 },
   { href: "/players", label: "Players", icon: Users },
