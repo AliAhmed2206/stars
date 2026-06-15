@@ -1,0 +1,44 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e4]:
+      - link "STARS" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - img [ref=e7]
+        - generic [ref=e10]: STARS
+      - generic [ref=e11]:
+        - link "Home" [ref=e12] [cursor=pointer]:
+          - /url: /
+          - img [ref=e13]
+          - text: Home
+        - link "Championship" [ref=e16] [cursor=pointer]:
+          - /url: /championship
+          - img [ref=e17]
+          - text: Championship
+        - link "Games" [ref=e23] [cursor=pointer]:
+          - /url: /games
+          - img [ref=e24]
+          - text: Games
+        - link "Players" [ref=e26] [cursor=pointer]:
+          - /url: /players
+          - img [ref=e27]
+          - text: Players
+      - link "Sign In" [ref=e33] [cursor=pointer]:
+        - /url: /auth
+  - main [ref=e34]:
+    - generic [ref=e37]:
+      - generic [ref=e38]:
+        - img [ref=e40]
+        - heading "Welcome to STARS" [level=1] [ref=e43]
+        - paragraph [ref=e44]: Sign in to continue
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - img [ref=e47]
+          - textbox "Email" [ref=e50]
+        - generic [ref=e51]:
+          - img [ref=e52]
+          - textbox "Password" [ref=e55]
+        - button "Sign In" [ref=e56] [cursor=pointer]
+      - button "Don't have an account? Sign up" [ref=e58]
+  - contentinfo [ref=e59]:
+    - generic [ref=e60]: STARS — Summer 2026
+  - alert [ref=e61]

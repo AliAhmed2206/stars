@@ -3,10 +3,9 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { createClient } from "@/lib/supabase/client"
-import { useEffect, useState } from "react"
-import { Menu, X, Sparkles, CalendarDays, Trophy, Gamepad2, Users, User, Shield } from "lucide-react"
-import type { User as UserType } from "@supabase/supabase-js"
+import { useProfile } from "@/lib/useProfile"
+import { useState } from "react"
+import { Menu, X, Sparkles, Trophy, Gamepad2, Users, User, Shield } from "lucide-react"
 
 const navItems = [
   { href: "/", label: "Home", icon: Sparkles },
@@ -17,32 +16,10 @@ const navItems = [
 
 export default function Navbar() {
   const pathname = usePathname()
-  const [user, setUser] = useState<UserType | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const { profile } = useProfile()
   const [menuOpen, setMenuOpen] = useState(false)
-  const supabase = createClient()
 
-  useEffect(() => {
-    async function load() {
-      const { data } = await supabase.auth.getUser()
-      setUser(data.user)
-      if (data.user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", data.user.id)
-          .single()
-        if (profile) setIsAdmin(profile.role === "admin")
-      }
-    }
-    load()
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      if (!session?.user) setIsAdmin(false)
-    })
-    return () => listener?.subscription.unsubscribe()
-  }, [])
+  const isAdmin = profile?.role === "admin"
 
   return (
     <nav className="sticky top-0 z-50 glass border-b border-border">
@@ -91,21 +68,22 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-3">
-            {user ? (
+            {profile ? (
               <Link
                 href="/profile"
                 className={cn(
-                  "w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200",
+                  "w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 text-sm font-bold",
                   pathname === "/profile"
                     ? "bg-accent/20 text-accent border border-accent/30"
-                    : "bg-card border border-border text-muted hover:text-foreground hover:border-accent/30"
+                    : "bg-gradient-to-br from-accent to-accent2 text-white border border-accent/30"
                 )}
+                title={profile.username}
               >
-                <User className="w-4 h-4" />
+                {profile.username?.[0]?.toUpperCase() || <User className="w-4 h-4" />}
               </Link>
             ) : (
               <Link href="/auth" className="btn-primary px-4 py-2 rounded-xl text-sm">
-                Sign In
+                Pick Name
               </Link>
             )}
             <button

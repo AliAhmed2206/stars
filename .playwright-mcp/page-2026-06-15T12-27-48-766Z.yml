@@ -1,0 +1,101 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e4]:
+      - link "STARS" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - img [ref=e7]
+        - generic [ref=e10]: STARS
+      - generic [ref=e11]:
+        - link "Home" [ref=e12] [cursor=pointer]:
+          - /url: /
+          - img [ref=e13]
+          - text: Home
+        - link "Championship" [ref=e16] [cursor=pointer]:
+          - /url: /championship
+          - img [ref=e17]
+          - text: Championship
+        - link "Games" [ref=e23] [cursor=pointer]:
+          - /url: /games
+          - img [ref=e24]
+          - text: Games
+        - link "Players" [ref=e26] [cursor=pointer]:
+          - /url: /players
+          - img [ref=e27]
+          - text: Players
+      - link "Sign In" [ref=e33] [cursor=pointer]:
+        - /url: /auth
+  - main [ref=e34]:
+    - generic [ref=e61]:
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - img [ref=e66]
+          - text: Summer 2026 — The crew is ready
+        - heading "STARS Summer Championship" [level=1] [ref=e69]:
+          - text: STARS
+          - text: Summer Championship
+        - paragraph [ref=e70]: The ultimate hub for the crew. Plan night outs, compete in tournaments, and track every match — all in real-time.
+        - generic [ref=e71]:
+          - link "Plan the Summer" [ref=e72] [cursor=pointer]:
+            - /url: /planner
+            - generic [ref=e74]:
+              - img [ref=e75]
+              - text: Plan the Summer
+              - img [ref=e77]
+          - link "View Championship" [ref=e79] [cursor=pointer]:
+            - /url: /championship
+            - generic [ref=e82]:
+              - img [ref=e83]
+              - generic [ref=e89]: View Championship
+      - generic [ref=e91]:
+        - link "Summer Planner Plan night outs & gatherings" [ref=e92] [cursor=pointer]:
+          - /url: /planner
+          - generic [ref=e96]:
+            - img [ref=e98]
+            - heading "Summer Planner" [level=3] [ref=e100]
+            - paragraph [ref=e101]: Plan night outs & gatherings
+        - link "Championship Tournaments & brackets" [ref=e102] [cursor=pointer]:
+          - /url: /championship
+          - generic [ref=e106]:
+            - img [ref=e108]
+            - heading "Championship" [level=3] [ref=e114]
+            - paragraph [ref=e115]: Tournaments & brackets
+        - link "Games All games & categories" [ref=e116] [cursor=pointer]:
+          - /url: /games
+          - generic [ref=e120]:
+            - img [ref=e122]
+            - heading "Games" [level=3] [ref=e124]
+            - paragraph [ref=e125]: All games & categories
+        - link "Players Leaderboard & stats" [ref=e126] [cursor=pointer]:
+          - /url: /players
+          - generic [ref=e130]:
+            - img [ref=e132]
+            - heading "Players" [level=3] [ref=e137]
+            - paragraph [ref=e138]: Leaderboard & stats
+      - generic [ref=e140]:
+        - generic [ref=e141]:
+          - heading "Featured Games" [level=2] [ref=e142]
+          - paragraph [ref=e143]: Jump into a tournament
+        - link "View all" [ref=e144] [cursor=pointer]:
+          - /url: /championship
+          - text: View all
+          - img [ref=e145]
+      - generic [ref=e148]:
+        - generic [ref=e151]:
+          - img [ref=e153]
+          - paragraph [ref=e158]: "19"
+          - paragraph [ref=e159]: Active Players
+        - generic [ref=e162]:
+          - img [ref=e164]
+          - paragraph [ref=e170]: Live
+          - paragraph [ref=e171]: Tournaments
+        - generic [ref=e174]:
+          - img [ref=e176]
+          - paragraph [ref=e178]: 0+
+          - paragraph [ref=e179]: Games
+        - generic [ref=e182]:
+          - img [ref=e184]
+          - paragraph [ref=e186]: Max
+          - paragraph [ref=e187]: Energy
+  - contentinfo [ref=e188]:
+    - generic [ref=e189]: STARS — Summer 2026
+  - alert [ref=e190]

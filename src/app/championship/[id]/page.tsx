@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { useProfile } from "@/lib/useProfile"
 import type { Tournament, TournamentParticipant, Match, TournamentGroup } from "@/lib/types"
-import { ArrowLeft, Users, Plus, LogOut, Loader2, Check, Trophy, RefreshCw, Sparkles, Award, Edit3, X, Star, Crown, Eye } from "lucide-react"
+import { ArrowLeft, Users, Plus, LogOut, Loader2, Check, Trophy, RefreshCw, Sparkles, Award, Edit3, X, Crown, Eye } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
@@ -20,8 +21,7 @@ export default function TournamentPage() {
   const [participants, setParticipants] = useState<TournamentParticipant[]>([])
   const [matches, setMatches] = useState<Match[]>([])
   const [groups, setGroups] = useState<TournamentGroup[]>([])
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
+  const { profile } = useProfile()
   const [loading, setLoading] = useState(true)
   const [scoreInputs, setScoreInputs] = useState<Record<string, { s1: string; s2: string }>>({})
   const [showConfetti, setShowConfetti] = useState(false)
@@ -31,13 +31,6 @@ export default function TournamentPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      setUser(data.user)
-      if (data.user) {
-        const { data: prof } = await supabase.from("profiles").select("*").eq("id", data.user.id).single()
-        setProfile(prof)
-      }
-    })
     loadData()
     const channel = supabase
       .channel(`tournament-${id}`)
@@ -70,13 +63,13 @@ export default function TournamentPage() {
   }
 
   async function handleJoin() {
-    if (!user) return
-    await supabase.from("tournament_participants").insert([{ tournament_id: id, user_id: user.id }])
+    if (!profile) return
+    await supabase.from("tournament_participants").insert([{ tournament_id: id, user_id: profile.id }])
     loadParticipants()
   }
   async function handleLeave() {
-    if (!user) return
-    await supabase.from("tournament_participants").delete().eq("tournament_id", id).eq("user_id", user.id)
+    if (!profile) return
+    await supabase.from("tournament_participants").delete().eq("tournament_id", id).eq("user_id", profile.id)
     loadParticipants()
   }
 
@@ -90,7 +83,6 @@ export default function TournamentPage() {
   async function handleGenerateBracket() {
     if (!tournament?.format) return
     const formatType = tournament.format.type
-    const playersPerTeam = tournament.format.players_per_team
     const shuffled = [...participants].sort(() => Math.random() - 0.5)
 
     if (formatType === "group_knockout") {
@@ -111,7 +103,6 @@ export default function TournamentPage() {
           for (let j = i + 1; j < gp.length; j++)
             await supabase.from("matches").insert([{ tournament_id: id, group_id: groupIds[g], round: 1, player1_id: gp[i].user_id, player2_id: gp[j].user_id, status: "pending" }])
       }
-      // knockout rounds
       const { data: allParticipants } = await supabase.from("tournament_participants").select("*, profile:profiles(*)").eq("tournament_id", id).order("seed")
       if (allParticipants) {
         const knockCandidates: TournamentParticipant[] = []
@@ -133,7 +124,6 @@ export default function TournamentPage() {
         if (i + 1 < shuffled.length)
           await supabase.from("matches").insert([{ tournament_id: id, round: 1, player1_id: shuffled[i].user_id, player2_id: shuffled[i + 1].user_id, status: "pending" }])
     } else {
-      // knockout — generate all rounds
       const totalRounds = Math.ceil(Math.log2(shuffled.length))
       const bracketSize = Math.pow(2, totalRounds)
       const byeCount = bracketSize - shuffled.length
@@ -158,7 +148,6 @@ export default function TournamentPage() {
           }
         }
       }
-      // Fill in later rounds as earlier ones complete
       if (totalRounds > 1) {
         for (let round = 2; round <= totalRounds; round++) {
           const matchesInRound = Math.pow(2, totalRounds - round)
@@ -207,7 +196,7 @@ export default function TournamentPage() {
     loadTournament()
   }
 
-  const isParticipant = user && participants.some((p) => p.user_id === user.id)
+  const isParticipant = !!(profile && participants.some((p) => p.user_id === profile.id))
   const canStart = tournament?.status === "open" && participants.length >= 2
   const isAdmin = profile?.role === "admin"
   const isCompleted = tournament?.status === "completed"
@@ -216,7 +205,6 @@ export default function TournamentPage() {
   const lastMatch = completedMatches[completedMatches.length - 1]
   const champion = lastMatch?.winner
 
-  // Bracket preview (live, computed from participants)
   const bracketPreview = useCallback((): BracketPreview[] => {
     const shuffled = [...participants].sort(() => Math.random() - 0.5)
     const total = shuffled.length
@@ -318,7 +306,7 @@ export default function TournamentPage() {
                 ) : <span className="text-3xl">{tournament.game?.icon || "🏆"}</span>}
                 <div>
                   <h1 className="text-2xl font-bold">{tournament.name}</h1>
-                  <p className="text-sm text-muted">{tournament.game?.name} {tournament.format && `• ${tournament.format.name}`}</p>
+                  <p className="text-sm text-muted">{tournament.game?.name} {tournament.format && `- ${tournament.format.name}`}</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-3 items-center">
@@ -338,10 +326,10 @@ export default function TournamentPage() {
               {tournament.description && <p className="text-sm text-muted mt-3">{tournament.description}</p>}
             </div>
             <div className="flex gap-2 flex-wrap">
-              {user && !isParticipant && tournament.status === "open" && (
+              {profile && !isParticipant && tournament.status === "open" && (
                 <button onClick={handleJoin} className="btn-primary px-5 py-2.5 rounded-xl text-sm flex items-center gap-2"><Plus className="w-4 h-4" /> Join</button>
               )}
-              {user && isParticipant && tournament.status === "open" && (
+              {profile && isParticipant && tournament.status === "open" && (
                 <button onClick={handleLeave} className="btn-secondary px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 text-danger"><LogOut className="w-4 h-4" /> Leave</button>
               )}
               {canStart && matches.length === 0 && (
@@ -382,7 +370,6 @@ export default function TournamentPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Participants */}
           <div className="lg:col-span-1 space-y-4">
             <div className="glass rounded-2xl p-5">
               <h3 className="font-semibold flex items-center gap-2 mb-4">
@@ -415,7 +402,6 @@ export default function TournamentPage() {
             </div>
           </div>
 
-          {/* Bracket / Preview */}
           <div className="lg:col-span-3 space-y-6">
             {matches.length > 0 ? (
               groups.length > 0 ? (
@@ -430,7 +416,7 @@ export default function TournamentPage() {
                       </h3>
                       <div className="space-y-2">
                         {groupMatches.map((match, idx) => (
-                          <MatchCard key={match.id} match={match} user={user} isParticipant={isParticipant}
+                          <MatchCard key={match.id} match={match} profile={profile} isParticipant={isParticipant}
                             scoreInputs={scoreInputs} setScoreInputs={setScoreInputs}
                             onSubmitScore={handleSubmitScore} index={idx} />
                         ))}
@@ -456,7 +442,7 @@ export default function TournamentPage() {
                         </p>
                         {roundMatches.map((match, idx) => (
                           <div key={match.id} className={cn("bracket-match", round === maxRound && "font-bold")}>
-                            <MatchCard match={match} user={user} isParticipant={isParticipant}
+                            <MatchCard match={match} profile={profile} isParticipant={isParticipant}
                               scoreInputs={scoreInputs} setScoreInputs={setScoreInputs}
                               onSubmitScore={handleSubmitScore} index={idx} isFinal={round === maxRound} />
                           </div>
@@ -467,7 +453,6 @@ export default function TournamentPage() {
                 </div>
               )
             ) : showPreview && preview.length > 0 ? (
-              /* Live Bracket Preview */
               <div className="bracket-container animate-slide-up">
                 {preview.map((rnd) => (
                   <div key={rnd.round} className="bracket-round">
@@ -532,8 +517,8 @@ export default function TournamentPage() {
   )
 }
 
-function MatchCard({ match, user, isParticipant, scoreInputs, setScoreInputs, onSubmitScore, index = 0, isFinal = false }: {
-  match: Match; user: any; isParticipant?: boolean;
+function MatchCard({ match, profile, isParticipant, scoreInputs, setScoreInputs, onSubmitScore, index = 0, isFinal = false }: {
+  match: Match; profile: any; isParticipant?: boolean;
   scoreInputs: Record<string, { s1: string; s2: string }>;
   setScoreInputs: (updater: (prev: Record<string, { s1: string; s2: string }>) => Record<string, { s1: string; s2: string }>) => void;
   onSubmitScore: (matchId: string) => void;
@@ -576,7 +561,7 @@ function MatchCard({ match, user, isParticipant, scoreInputs, setScoreInputs, on
         </div>
 
         <div className="flex flex-col items-center gap-1 flex-shrink-0">
-          {match.status === "pending" && user && isParticipant ? (
+          {match.status === "pending" && profile && isParticipant ? (
             <div className="flex items-center gap-1">
               <input type="number" value={inputs.s1} onChange={(e) => setScoreInputs((prev) => ({ ...prev, [match.id]: { ...prev[match.id] || { s1: "", s2: "" }, s1: e.target.value } }))}
                 className="w-10 bg-background border border-border rounded-lg py-1 text-xs text-center focus:outline-none focus:border-accent/50" min="0" />

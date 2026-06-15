@@ -1,56 +1,46 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { Sparkles, Mail, Lock, User, Loader2 } from "lucide-react"
-import Link from "next/link"
+import { useProfile } from "@/lib/useProfile"
+import { Sparkles, Users, User, Loader2, Plus, Check } from "lucide-react"
+import type { Profile } from "@/lib/types"
 
 export default function AuthPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [username, setUsername] = useState("")
-  const [isSignUp, setIsSignUp] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showCreate, setShowCreate] = useState(false)
+  const [newName, setNewName] = useState("")
+  const [creating, setCreating] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+  const { selectProfile } = useProfile()
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-
-    try {
-      if (isSignUp) {
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { username } },
-        })
-        if (signUpError) throw signUpError
-        if (data.user) {
-          await supabase.from("profiles").upsert({
-            id: data.user.id,
-            username: username || email.split("@")[0],
-          })
-        }
-        setError("Check your email to confirm your account!")
-      } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-        if (signInError) throw signInError
-        router.push("/")
-        router.refresh()
-      }
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
+  useEffect(() => {
+    supabase.from("profiles").select("*").order("username").then(({ data }) => {
+      if (data) setProfiles(data as Profile[])
       setLoading(false)
-    }
+    })
+  }, [])
+
+  function handleSelect(p: Profile) {
+    selectProfile(p)
+    router.push("/")
   }
+
+  async function handleCreate() {
+    if (!newName.trim()) return
+    setCreating(true)
+    const { data } = await supabase.from("profiles").insert([{ username: newName.trim() }]).select().single()
+    if (data) {
+      selectProfile(data as Profile)
+      router.push("/")
+    }
+    setCreating(false)
+  }
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-accent animate-spin" /></div>
 
   return (
     <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4">
@@ -61,74 +51,52 @@ export default function AuthPage() {
               <Sparkles className="w-7 h-7 text-white" />
             </div>
             <h1 className="text-2xl font-bold">
-              <span className="text-gradient">{isSignUp ? "Join" : "Welcome to"}</span> STARS
+              <span className="text-gradient">Welcome to</span> STARS
             </h1>
-            <p className="text-muted text-sm mt-1">
-              {isSignUp ? "Create your account" : "Sign in to continue"}
-            </p>
+            <p className="text-muted text-sm mt-1">Pick your name to get started</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
+          {!showCreate ? (
+            <>
+              <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-hide mb-4">
+                {profiles.map((p) => (
+                  <button key={p.id} onClick={() => handleSelect(p)}
+                    className="w-full glass rounded-2xl p-4 flex items-center gap-3 glass-hover transition-all text-left">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-accent to-accent2 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                      {p.username?.[0]?.toUpperCase() || "?"}
+                    </div>
+                    <span className="font-medium">{p.username}</span>
+                    {p.role === "admin" && <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] border border-accent/30 text-accent">Admin</span>}
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={() => setShowCreate(true)}
+                className="w-full py-3 rounded-2xl text-sm text-muted hover:text-foreground border border-dashed border-border hover:border-accent/30 transition-all flex items-center justify-center gap-2">
+                <Plus className="w-4 h-4" /> Add your name
+              </button>
+            </>
+          ) : (
+            <div className="space-y-4">
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                <input
-                  type="text"
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Your name"
                   className="w-full bg-background border border-border rounded-2xl py-3 pl-12 pr-4 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent/50 transition-colors"
-                  required={isSignUp}
-                />
+                  autoFocus onKeyDown={(e) => e.key === "Enter" && handleCreate()} />
               </div>
-            )}
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-background border border-border rounded-2xl py-3 pl-12 pr-4 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent/50 transition-colors"
-                required
-              />
+              <div className="flex gap-3">
+                <button onClick={handleCreate} disabled={creating || !newName.trim()}
+                  className="btn-primary flex-1 py-3 rounded-2xl text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                  {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Join STARS
+                </button>
+                <button onClick={() => setShowCreate(false)} className="btn-secondary py-3 px-6 rounded-2xl text-sm">
+                  Back
+                </button>
+              </div>
             </div>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-background border border-border rounded-2xl py-3 pl-12 pr-4 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent/50 transition-colors"
-                required
-              />
-            </div>
-
-            {error && (
-              <p className={`text-sm text-center ${error.includes("Check") ? "text-success" : "text-danger"}`}>
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full py-3 rounded-2xl text-sm flex items-center justify-center gap-2"
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isSignUp ? "Create Account" : "Sign In"}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => { setIsSignUp(!isSignUp); setError(null) }}
-              className="text-sm text-muted hover:text-accent transition-colors"
-            >
-              {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </div>

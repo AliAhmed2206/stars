@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { useProfile } from "@/lib/useProfile"
 import type { Tournament, Game, GameFormat, Profile, Event } from "@/lib/types"
 import Link from "next/link"
-import { Plus, Trophy, Users, ArrowRight, Loader2, Check, Search, Sparkles, Star, Award, Gift, CalendarDays, MapPin, Clock, Trash2, Tv } from "lucide-react"
+import { Plus, Trophy, Users, ArrowRight, Loader2, Check, Search, Sparkles, Star, Award, Gift, CalendarDays, MapPin, Clock, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format, parseISO } from "date-fns"
 
@@ -24,7 +25,7 @@ export default function ChampionshipPage() {
   const [formats, setFormats] = useState<GameFormat[]>([])
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [events, setEvents] = useState<Event[]>([])
-  const [user, setUser] = useState<any>(null)
+  const { profile } = useProfile()
   const [loading, setLoading] = useState(true)
   const [showWizard, setShowWizard] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>("tournaments")
@@ -41,7 +42,6 @@ export default function ChampionshipPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [creating, setCreating] = useState(false)
 
-  // Event form state
   const [showEventForm, setShowEventForm] = useState(false)
   const [eventTitle, setEventTitle] = useState("")
   const [eventDesc, setEventDesc] = useState("")
@@ -50,7 +50,6 @@ export default function ChampionshipPage() {
   const [eventLocation, setEventLocation] = useState("")
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
     loadData()
     const channel = supabase.channel("championship-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "tournaments" }, () => loadData())
@@ -92,14 +91,14 @@ export default function ChampionshipPage() {
     setSelectedFormat(format); setMaxPlayers(format.max_players); setStep("settings")
   }
 
-  function togglePlayer(profile: Profile) {
+  function togglePlayer(prof: Profile) {
     setSelectedPlayers((prev) =>
-      prev.some((p) => p.id === profile.id) ? prev.filter((p) => p.id !== profile.id) : [...prev, profile]
+      prev.some((p) => p.id === prof.id) ? prev.filter((p) => p.id !== prof.id) : [...prev, prof]
     )
   }
 
   async function createTournament() {
-    if (!user || !selectedGame || !selectedFormat || !tournamentName.trim()) return
+    if (!profile || !selectedGame || !selectedFormat || !tournamentName.trim()) return
     setCreating(true)
     try {
       const { data: t, error } = await supabase.from("tournaments").insert([{
@@ -107,7 +106,7 @@ export default function ChampionshipPage() {
         name: tournamentName.trim(), description: tournamentDesc.trim() || null,
         prizes: prizes.trim() || null,
         max_participants: maxPlayers, settings: selectedFormat.settings,
-        status: "open", created_by: user.id,
+        status: "open", created_by: profile.id,
       }]).select().single()
       if (error) throw error
       if (selectedPlayers.length > 0) {
@@ -128,11 +127,11 @@ export default function ChampionshipPage() {
 
   async function handleEventSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!user) return
+    if (!profile) return
     await supabase.from("events").insert([{
       title: eventTitle, description: eventDesc || null,
       date: eventDate, time: eventTime || null, location: eventLocation || null,
-      created_by: user.id,
+      created_by: profile.id,
     }])
     setEventTitle(""); setEventDesc(""); setEventDate(""); setEventTime(""); setEventLocation("")
     setShowEventForm(false)
@@ -159,25 +158,23 @@ export default function ChampionshipPage() {
     <div className="min-h-screen">
       <div className="particles-bg">{Array.from({ length: 8 }).map((_, i) => <div key={i} className="particle" />)}</div>
       <div className="max-w-6xl mx-auto px-4 py-8 relative z-10">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold"><span className="text-gradient">Stars</span> Championship</h1>
             <p className="text-muted text-sm mt-1">Tournaments, events & glory</p>
           </div>
-          {user && activeTab === "tournaments" && (
+          {profile && activeTab === "tournaments" && (
             <button onClick={() => setShowWizard(!showWizard)} className="btn-primary px-6 py-3 rounded-2xl text-sm flex items-center gap-2 animate-glow">
               <Plus className="w-5 h-5" /> New Tournament
             </button>
           )}
-          {user && activeTab === "events" && (
+          {profile && activeTab === "events" && (
             <button onClick={() => setShowEventForm(!showEventForm)} className="btn-primary px-6 py-3 rounded-2xl text-sm flex items-center gap-2 animate-glow">
               <Plus className="w-5 h-5" /> New Event
             </button>
           )}
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-1 mb-8 glass rounded-2xl p-1.5 w-fit">
           {[
             { id: "tournaments" as Tab, label: "Tournaments", icon: Trophy },
@@ -195,7 +192,6 @@ export default function ChampionshipPage() {
 
         {activeTab === "tournaments" && (
           <>
-            {/* Tournament Creation Wizard */}
             {showWizard && (
               <div className="glass rounded-3xl p-6 mb-8 animate-slide-up">
                 <div className="flex items-center gap-2 mb-6 overflow-x-auto scrollbar-hide">
@@ -396,13 +392,12 @@ export default function ChampionshipPage() {
               </div>
             )}
 
-            {/* Tournament List */}
             {tournaments.length === 0 ? (
               <div className="glass rounded-3xl p-16 text-center animate-slide-up">
                 <Trophy className="w-16 h-16 text-muted mx-auto mb-4 animate-float" />
                 <p className="text-lg font-semibold mb-2">No tournaments yet</p>
                 <p className="text-sm text-muted mb-6">Create the first one and let the games begin!</p>
-                {user && (
+                {profile && (
                   <button onClick={() => setShowWizard(true)} className="btn-primary px-8 py-3 rounded-2xl text-sm inline-flex items-center gap-2 animate-glow">
                     <Plus className="w-5 h-5" /> Create First Tournament
                   </button>
@@ -450,7 +445,6 @@ export default function ChampionshipPage() {
 
         {activeTab === "events" && (
           <>
-            {/* Event Creation Form */}
             {showEventForm && (
               <div className="glass rounded-3xl p-6 mb-8 animate-slide-up">
                 <form onSubmit={handleEventSubmit} className="space-y-4">
@@ -477,13 +471,12 @@ export default function ChampionshipPage() {
               </div>
             )}
 
-            {/* Events List */}
             {Object.keys(groupedEvents).length === 0 ? (
               <div className="glass rounded-3xl p-16 text-center animate-slide-up">
                 <CalendarDays className="w-16 h-16 text-muted mx-auto mb-4 animate-float" />
                 <p className="text-lg font-semibold mb-2">No events planned</p>
                 <p className="text-sm text-muted mb-6">Plan the next hangout!</p>
-                {user && (
+                {profile && (
                   <button onClick={() => setShowEventForm(true)} className="btn-primary px-8 py-3 rounded-2xl text-sm inline-flex items-center gap-2 animate-glow">
                     <Plus className="w-5 h-5" /> Create First Event
                   </button>
@@ -522,7 +515,7 @@ export default function ChampionshipPage() {
                               )}
                             </div>
                           </div>
-                          {user && (
+                          {profile && (
                             <button onClick={() => handleEventDelete(event.id)}
                               className="opacity-0 group-hover:opacity-100 p-2 rounded-xl hover:bg-danger/10 text-muted hover:text-danger transition-all">
                               <Trash2 className="w-4 h-4" />

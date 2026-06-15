@@ -8,7 +8,7 @@ import { Sparkles, CalendarDays, Trophy, Gamepad2, Users, ArrowRight, Star, Flam
 
 const quickLinks = [
   {
-    href: "/planner",
+    href: "/championship",
     icon: CalendarDays,
     title: "Summer Planner",
     desc: "Plan night outs & gatherings",
@@ -104,11 +104,11 @@ export default function Home() {
                 and track every match — all in real-time.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/planner" className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-base font-bold text-white overflow-hidden">
+                <Link href="/championship" className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-base font-bold text-white overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-r from-accent via-accent2 to-accent3 bg-[length:200%_100%] animate-gradient" />
                   <div className="relative flex items-center gap-2">
                     <CalendarDays className="w-5 h-5" />
-                    Plan the Summer
+                    Plan Events
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>

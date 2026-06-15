@@ -2,15 +2,14 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { useProfile } from "@/lib/useProfile"
 import { useRouter } from "next/navigation"
-import { User, LogOut, Mail, Loader2, Trophy, Gamepad2, CalendarDays, Check, X } from "lucide-react"
-import Link from "next/link"
-import type { User as UserType } from "@supabase/supabase-js"
+import { User, Loader2, Trophy, Gamepad2, Check, X, LogOut } from "lucide-react"
 import type { Match, Tournament } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<UserType | null>(null)
+  const { profile, clearProfile, refreshProfile } = useProfile()
   const [username, setUsername] = useState("")
   const [bio, setBio] = useState("")
   const [loading, setLoading] = useState(true)
@@ -21,48 +20,47 @@ export default function ProfilePage() {
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) { router.push("/auth"); return }
-      setUser(data.user)
-      const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single()
-      if (profile) { setUsername(profile.username || ""); setBio(profile.bio || "") }
+    if (!profile) { router.push("/auth"); return }
+    setUsername(profile.username || "")
+    setBio(profile.bio || "")
 
-      // Load match history
-      const { data: matches } = await supabase
-        .from("matches")
-        .select("*, player1:profiles!player1_id(*), player2:profiles!player2_id(*), winner:profiles!winner_id(*), tournament:tournaments(id, name, game:games(name))")
-        .or(`player1_id.eq.${data.user.id},player2_id.eq.${data.user.id}`)
-        .eq("status", "completed")
-        .order("created_at", { ascending: false })
-        .limit(20)
-      if (matches) {
-        setMyMatches(matches as any)
-        let w = 0, l = 0, d = 0
-        matches.forEach((m: any) => {
-          if (m.winner_id === data.user.id) w++
-          else if (m.winner_id && m.winner_id !== data.user.id) l++
-          else if (m.status === "completed" && !m.winner_id) d++
-        })
-        setStats({ wins: w, losses: l, draws: d, points: w * 3 + d * 1 })
-      }
-      setLoading(false)
-    })
-  }, [])
+    supabase
+      .from("matches")
+      .select("*, player1:profiles!player1_id(*), player2:profiles!player2_id(*), winner:profiles!winner_id(*), tournament:tournaments(id, name, game:games(name))")
+      .or(`player1_id.eq.${profile.id},player2_id.eq.${profile.id}`)
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data: matches }) => {
+        if (matches) {
+          setMyMatches(matches as any)
+          let w = 0, l = 0, d = 0
+          matches.forEach((m: any) => {
+            if (m.winner_id === profile.id) w++
+            else if (m.winner_id && m.winner_id !== profile.id) l++
+            else if (m.status === "completed" && !m.winner_id) d++
+          })
+          setStats({ wins: w, losses: l, draws: d, points: w * 3 + d * 1 })
+        }
+        setLoading(false)
+      })
+  }, [profile?.id])
 
   async function handleSave() {
-    if (!user) return
+    if (!profile) return
     setSaving(true)
-    await supabase.from("profiles").upsert({ id: user.id, username, bio })
+    await supabase.from("profiles").update({ username, bio }).eq("id", profile.id)
+    await refreshProfile()
     setSaving(false)
   }
 
-  async function handleSignOut() {
-    await supabase.auth.signOut()
-    router.push("/"); router.refresh()
+  function handleSwitch() {
+    clearProfile()
+    router.push("/auth")
   }
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-accent animate-spin" /></div>
-  if (!user) return null
+  if (!profile) return null
 
   return (
     <div className="min-h-screen">
@@ -71,19 +69,12 @@ export default function ProfilePage() {
         <div className="glass rounded-3xl p-8 mb-8 animate-slide-up">
           <div className="flex flex-col items-center mb-8">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent via-accent2 to-accent3 animate-gradient flex items-center justify-center mb-4 animate-glow">
-              <User className="w-10 h-10 text-white" />
+              <span className="text-3xl font-bold text-white">{profile.username?.[0]?.toUpperCase() || "?"}</span>
             </div>
             <h1 className="text-2xl font-bold"><span className="text-gradient">Profile</span></h1>
           </div>
 
           <div className="space-y-5 max-w-md mx-auto">
-            <div>
-              <label className="text-sm text-muted mb-2 block">Email</label>
-              <div className="flex items-center gap-3 glass rounded-2xl px-4 py-3">
-                <Mail className="w-4 h-4 text-muted" />
-                <span className="text-sm">{user.email}</span>
-              </div>
-            </div>
             <div>
               <label className="text-sm text-muted mb-2 block">Username</label>
               <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
@@ -100,14 +91,13 @@ export default function ProfilePage() {
                 className="btn-primary flex-1 py-3 rounded-2xl text-sm flex items-center justify-center gap-2">
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save Changes
               </button>
-              <button onClick={handleSignOut} className="btn-secondary py-3 px-6 rounded-2xl text-sm flex items-center gap-2 text-danger">
-                <LogOut className="w-4 h-4" /> Sign Out
+              <button onClick={handleSwitch} className="btn-secondary py-3 px-6 rounded-2xl text-sm flex items-center gap-2 text-muted">
+                <LogOut className="w-4 h-4" /> Switch User
               </button>
             </div>
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8 animate-slide-up">
           <div className="glass rounded-2xl p-5 text-center">
             <p className="text-3xl font-bold text-success">{stats.wins}</p>
@@ -123,7 +113,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Match History */}
         <div className="glass rounded-3xl p-6 animate-slide-up">
           <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
             <Gamepad2 className="w-5 h-5 text-accent" /> Match History
@@ -133,7 +122,7 @@ export default function ProfilePage() {
           ) : (
             <div className="space-y-2">
               {myMatches.map((match, i) => {
-                const isWinner = match.winner_id === user?.id
+                const isWinner = match.winner_id === profile.id
                 const isDraw = match.status === "completed" && !match.winner_id
                 return (
                   <div key={match.id} className={cn(

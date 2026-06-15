@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { useProfile } from "@/lib/useProfile"
 import { useRouter } from "next/navigation"
-import { Shield, Users, Gamepad2, Trophy, Search, Star, Trash2, RefreshCw, Loader2, Check, X, UserCog } from "lucide-react"
+import { Shield, Users, Gamepad2, Trophy, Trash2, Loader2, UserCog } from "lucide-react"
 import type { Profile, Game, Tournament } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -11,46 +12,22 @@ type Tab = "overview" | "games" | "users" | "tournaments"
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("overview")
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [user, setUser] = useState<any>(null)
+  const { profile, loading: profileLoading } = useProfile()
   const [loading, setLoading] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
-  // Data
   const [allUsers, setAllUsers] = useState<Profile[]>([])
   const [games, setGames] = useState<Game[]>([])
   const [tournaments, setTournaments] = useState<Tournament[]>([])
 
   useEffect(() => {
-    checkAuth()
-  }, [])
-
-  async function checkAuth() {
-    const { data: authData } = await supabase.auth.getUser()
-    if (!authData.user) {
-      router.push("/auth")
-      return
-    }
-    setUser(authData.user)
-
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", authData.user.id)
-      .single()
-
-    if (!prof || prof.role !== "admin") {
+    if (!profileLoading && (!profile || profile.role !== "admin")) {
       router.push("/")
       return
     }
-
-    setProfile(prof as Profile)
-    setIsAdmin(true)
-    loadData()
-    setLoading(false)
-  }
+    if (profile?.role === "admin") loadData()
+  }, [profile, profileLoading])
 
   async function loadData() {
     const [u, g, t] = await Promise.all([
@@ -61,6 +38,7 @@ export default function AdminPage() {
     if (u.data) setAllUsers(u.data as Profile[])
     if (g.data) setGames(g.data as Game[])
     if (t.data) setTournaments(t.data as Tournament[])
+    setLoading(false)
   }
 
   async function toggleUserRole(userId: string, currentRole: string) {
@@ -79,7 +57,7 @@ export default function AdminPage() {
     loadData()
   }
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-accent animate-spin" />
@@ -87,7 +65,7 @@ export default function AdminPage() {
     )
   }
 
-  if (!isAdmin) return null
+  if (!profile || profile.role !== "admin") return null
 
   const tabs: { id: Tab; label: string; icon: any }[] = [
     { id: "overview", label: "Overview", icon: Shield },
@@ -181,7 +159,6 @@ export default function AdminPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm">{p.username}</p>
-                  <p className="text-xs text-muted">ID: {p.id.slice(0, 8)}...</p>
                 </div>
                 <span className={cn(
                   "px-3 py-1 rounded-full text-xs font-medium border",
