@@ -16,7 +16,7 @@ const navItems = [
 
 export default function Navbar() {
   const pathname = usePathname()
-  const { profile } = useProfile()
+  const { profile, user } = useProfile()
   const [menuOpen, setMenuOpen] = useState(false)
 
   const isAdmin = profile?.role === "admin"
@@ -68,7 +68,7 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-3">
-            {profile ? (
+            {user ? (
               <Link
                 href="/profile"
                 className={cn(
@@ -77,13 +77,13 @@ export default function Navbar() {
                     ? "bg-accent/20 text-accent border border-accent/30"
                     : "bg-gradient-to-br from-accent to-accent2 text-white border border-accent/30"
                 )}
-                title={profile.username}
+                title={profile?.username || user.email || ""}
               >
-                {profile.username?.[0]?.toUpperCase() || <User className="w-4 h-4" />}
+                {profile?.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || <User className="w-4 h-4" />}
               </Link>
             ) : (
               <Link href="/auth" className="btn-primary px-4 py-2 rounded-xl text-sm">
-                Pick Name
+                Sign In
               </Link>
             )}
             <button

@@ -4,12 +4,12 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useProfile } from "@/lib/useProfile"
 import { useRouter } from "next/navigation"
-import { User, Loader2, Trophy, Gamepad2, Check, X, LogOut } from "lucide-react"
+import { User, LogOut, Mail, Loader2, Trophy, Gamepad2, Check, X } from "lucide-react"
 import type { Match, Tournament } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export default function ProfilePage() {
-  const { profile, clearProfile, refreshProfile } = useProfile()
+  const { user, profile, loading: profileLoading, refreshProfile } = useProfile()
   const [username, setUsername] = useState("")
   const [bio, setBio] = useState("")
   const [loading, setLoading] = useState(true)
@@ -20,14 +20,15 @@ export default function ProfilePage() {
   const supabase = createClient()
 
   useEffect(() => {
-    if (!profile) { router.push("/auth"); return }
-    setUsername(profile.username || "")
-    setBio(profile.bio || "")
+    if (profileLoading) return
+    if (!user) { router.push("/auth"); return }
+    setUsername(profile?.username || "")
+    setBio(profile?.bio || "")
 
     supabase
       .from("matches")
       .select("*, player1:profiles!player1_id(*), player2:profiles!player2_id(*), winner:profiles!winner_id(*), tournament:tournaments(id, name, game:games(name))")
-      .or(`player1_id.eq.${profile.id},player2_id.eq.${profile.id}`)
+      .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
       .eq("status", "completed")
       .order("created_at", { ascending: false })
       .limit(20)
@@ -36,31 +37,31 @@ export default function ProfilePage() {
           setMyMatches(matches as any)
           let w = 0, l = 0, d = 0
           matches.forEach((m: any) => {
-            if (m.winner_id === profile.id) w++
-            else if (m.winner_id && m.winner_id !== profile.id) l++
+            if (m.winner_id === user.id) w++
+            else if (m.winner_id && m.winner_id !== user.id) l++
             else if (m.status === "completed" && !m.winner_id) d++
           })
           setStats({ wins: w, losses: l, draws: d, points: w * 3 + d * 1 })
         }
         setLoading(false)
       })
-  }, [profile?.id])
+  }, [user, profile, profileLoading])
 
   async function handleSave() {
-    if (!profile) return
+    if (!user) return
     setSaving(true)
-    await supabase.from("profiles").update({ username, bio }).eq("id", profile.id)
+    await supabase.from("profiles").upsert({ id: user.id, username, bio })
     await refreshProfile()
     setSaving(false)
   }
 
-  function handleSwitch() {
-    clearProfile()
-    router.push("/auth")
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    router.push("/"); router.refresh()
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-accent animate-spin" /></div>
-  if (!profile) return null
+  if (profileLoading || loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-accent animate-spin" /></div>
+  if (!user) return null
 
   return (
     <div className="min-h-screen">
@@ -69,12 +70,19 @@ export default function ProfilePage() {
         <div className="glass rounded-3xl p-8 mb-8 animate-slide-up">
           <div className="flex flex-col items-center mb-8">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent via-accent2 to-accent3 animate-gradient flex items-center justify-center mb-4 animate-glow">
-              <span className="text-3xl font-bold text-white">{profile.username?.[0]?.toUpperCase() || "?"}</span>
+              <span className="text-3xl font-bold text-white">{profile?.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "?"}</span>
             </div>
             <h1 className="text-2xl font-bold"><span className="text-gradient">Profile</span></h1>
           </div>
 
           <div className="space-y-5 max-w-md mx-auto">
+            <div>
+              <label className="text-sm text-muted mb-2 block">Email</label>
+              <div className="flex items-center gap-3 glass rounded-2xl px-4 py-3">
+                <Mail className="w-4 h-4 text-muted" />
+                <span className="text-sm">{user.email}</span>
+              </div>
+            </div>
             <div>
               <label className="text-sm text-muted mb-2 block">Username</label>
               <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
@@ -91,8 +99,8 @@ export default function ProfilePage() {
                 className="btn-primary flex-1 py-3 rounded-2xl text-sm flex items-center justify-center gap-2">
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save Changes
               </button>
-              <button onClick={handleSwitch} className="btn-secondary py-3 px-6 rounded-2xl text-sm flex items-center gap-2 text-muted">
-                <LogOut className="w-4 h-4" /> Switch User
+              <button onClick={handleSignOut} className="btn-secondary py-3 px-6 rounded-2xl text-sm flex items-center gap-2 text-danger">
+                <LogOut className="w-4 h-4" /> Sign Out
               </button>
             </div>
           </div>
@@ -122,7 +130,7 @@ export default function ProfilePage() {
           ) : (
             <div className="space-y-2">
               {myMatches.map((match, i) => {
-                const isWinner = match.winner_id === profile.id
+                const isWinner = match.winner_id === user.id
                 const isDraw = match.status === "completed" && !match.winner_id
                 return (
                   <div key={match.id} className={cn(

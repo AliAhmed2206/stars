@@ -21,7 +21,7 @@ export default function TournamentPage() {
   const [participants, setParticipants] = useState<TournamentParticipant[]>([])
   const [matches, setMatches] = useState<Match[]>([])
   const [groups, setGroups] = useState<TournamentGroup[]>([])
-  const { profile } = useProfile()
+  const { profile, user } = useProfile()
   const [loading, setLoading] = useState(true)
   const [scoreInputs, setScoreInputs] = useState<Record<string, { s1: string; s2: string }>>({})
   const [showConfetti, setShowConfetti] = useState(false)
@@ -63,13 +63,13 @@ export default function TournamentPage() {
   }
 
   async function handleJoin() {
-    if (!profile) return
-    await supabase.from("tournament_participants").insert([{ tournament_id: id, user_id: profile.id }])
+    if (!user) return
+    await supabase.from("tournament_participants").insert([{ tournament_id: id, user_id: user.id }])
     loadParticipants()
   }
   async function handleLeave() {
-    if (!profile) return
-    await supabase.from("tournament_participants").delete().eq("tournament_id", id).eq("user_id", profile.id)
+    if (!user) return
+    await supabase.from("tournament_participants").delete().eq("tournament_id", id).eq("user_id", user.id)
     loadParticipants()
   }
 
@@ -196,7 +196,7 @@ export default function TournamentPage() {
     loadTournament()
   }
 
-  const isParticipant = !!(profile && participants.some((p) => p.user_id === profile.id))
+  const isParticipant = !!(user && participants.some((p) => p.user_id === user.id))
   const canStart = tournament?.status === "open" && participants.length >= 2
   const isAdmin = profile?.role === "admin"
   const isCompleted = tournament?.status === "completed"
@@ -326,10 +326,10 @@ export default function TournamentPage() {
               {tournament.description && <p className="text-sm text-muted mt-3">{tournament.description}</p>}
             </div>
             <div className="flex gap-2 flex-wrap">
-              {profile && !isParticipant && tournament.status === "open" && (
+              {user && !isParticipant && tournament.status === "open" && (
                 <button onClick={handleJoin} className="btn-primary px-5 py-2.5 rounded-xl text-sm flex items-center gap-2"><Plus className="w-4 h-4" /> Join</button>
               )}
-              {profile && isParticipant && tournament.status === "open" && (
+              {user && isParticipant && tournament.status === "open" && (
                 <button onClick={handleLeave} className="btn-secondary px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 text-danger"><LogOut className="w-4 h-4" /> Leave</button>
               )}
               {canStart && matches.length === 0 && (
@@ -416,7 +416,7 @@ export default function TournamentPage() {
                       </h3>
                       <div className="space-y-2">
                         {groupMatches.map((match, idx) => (
-                          <MatchCard key={match.id} match={match} profile={profile} isParticipant={isParticipant}
+                          <MatchCard key={match.id} match={match} user={user} isParticipant={isParticipant}
                             scoreInputs={scoreInputs} setScoreInputs={setScoreInputs}
                             onSubmitScore={handleSubmitScore} index={idx} />
                         ))}
@@ -442,7 +442,7 @@ export default function TournamentPage() {
                         </p>
                         {roundMatches.map((match, idx) => (
                           <div key={match.id} className={cn("bracket-match", round === maxRound && "font-bold")}>
-                            <MatchCard match={match} profile={profile} isParticipant={isParticipant}
+                            <MatchCard match={match} user={user} isParticipant={isParticipant}
                               scoreInputs={scoreInputs} setScoreInputs={setScoreInputs}
                               onSubmitScore={handleSubmitScore} index={idx} isFinal={round === maxRound} />
                           </div>
@@ -517,8 +517,8 @@ export default function TournamentPage() {
   )
 }
 
-function MatchCard({ match, profile, isParticipant, scoreInputs, setScoreInputs, onSubmitScore, index = 0, isFinal = false }: {
-  match: Match; profile: any; isParticipant?: boolean;
+function MatchCard({ match, user, isParticipant, scoreInputs, setScoreInputs, onSubmitScore, index = 0, isFinal = false }: {
+  match: Match; user: any; isParticipant?: boolean;
   scoreInputs: Record<string, { s1: string; s2: string }>;
   setScoreInputs: (updater: (prev: Record<string, { s1: string; s2: string }>) => Record<string, { s1: string; s2: string }>) => void;
   onSubmitScore: (matchId: string) => void;
@@ -561,7 +561,7 @@ function MatchCard({ match, profile, isParticipant, scoreInputs, setScoreInputs,
         </div>
 
         <div className="flex flex-col items-center gap-1 flex-shrink-0">
-          {match.status === "pending" && profile && isParticipant ? (
+          {match.status === "pending" && user && isParticipant ? (
             <div className="flex items-center gap-1">
               <input type="number" value={inputs.s1} onChange={(e) => setScoreInputs((prev) => ({ ...prev, [match.id]: { ...prev[match.id] || { s1: "", s2: "" }, s1: e.target.value } }))}
                 className="w-10 bg-background border border-border rounded-lg py-1 text-xs text-center focus:outline-none focus:border-accent/50" min="0" />

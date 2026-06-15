@@ -1,11 +1,12 @@
 -- ============================================
--- STARS — Database Schema (v3 - No Auth)
+-- STARS — Database Schema (v4)
+-- Auth: Magic link (email) + Google OAuth
 -- Run this entire script in the Supabase SQL Editor
 -- ============================================
 
--- PROFILES
+-- PROFILES (extends auth.users)
 CREATE TABLE IF NOT EXISTS profiles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username TEXT NOT NULL DEFAULT '',
   avatar_url TEXT,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
@@ -19,17 +20,36 @@ DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
 CREATE POLICY "Public profiles are viewable by everyone"
   ON profiles FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Anyone can insert profiles" ON profiles;
-CREATE POLICY "Anyone can insert profiles"
-  ON profiles FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
+CREATE POLICY "Users can insert their own profile"
+  ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
-DROP POLICY IF EXISTS "Anyone can update profiles" ON profiles;
-CREATE POLICY "Anyone can update profiles"
-  ON profiles FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+CREATE POLICY "Users can update their own profile"
+  ON profiles FOR UPDATE USING (auth.uid() = id);
 
-DROP POLICY IF EXISTS "Anyone can delete profiles" ON profiles;
-CREATE POLICY "Anyone can delete profiles"
-  ON profiles FOR DELETE USING (true);
+-- Auto-create profile on signup (magic link or Google)
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, username, role)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
+    'user'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Set admin
+UPDATE profiles SET role = 'admin'
+WHERE id IN (SELECT id FROM auth.users WHERE email = 'ali.120250176@ejust.edu.eg');
 
 -- EVENTS
 CREATE TABLE IF NOT EXISTS events (
@@ -49,13 +69,13 @@ DROP POLICY IF EXISTS "Events are viewable by everyone" ON events;
 CREATE POLICY "Events are viewable by everyone"
   ON events FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Anyone can create events" ON events;
-CREATE POLICY "Anyone can create events"
-  ON events FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can create events" ON events;
+CREATE POLICY "Authenticated users can create events"
+  ON events FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS "Anyone can delete events" ON events;
-CREATE POLICY "Anyone can delete events"
-  ON events FOR DELETE USING (true);
+DROP POLICY IF EXISTS "Creators can delete their events" ON events;
+CREATE POLICY "Creators can delete their events"
+  ON events FOR DELETE USING (auth.uid() = created_by);
 
 -- GAMES
 CREATE TABLE IF NOT EXISTS games (
@@ -68,7 +88,6 @@ CREATE TABLE IF NOT EXISTS games (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Remove duplicate games
 DELETE FROM games WHERE id IN (
   SELECT id FROM (
     SELECT id, ROW_NUMBER() OVER (PARTITION BY name ORDER BY id) AS rn
@@ -87,9 +106,9 @@ DROP POLICY IF EXISTS "Games are viewable by everyone" ON games;
 CREATE POLICY "Games are viewable by everyone"
   ON games FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Anyone can manage games" ON games;
-CREATE POLICY "Anyone can manage games"
-  ON games FOR ALL USING (true);
+DROP POLICY IF EXISTS "Admins can manage games" ON games;
+CREATE POLICY "Admins can manage games"
+  ON games FOR ALL USING (auth.role() = 'authenticated' AND EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- GAME FORMATS
 CREATE TABLE IF NOT EXISTS game_formats (
@@ -112,9 +131,9 @@ DROP POLICY IF EXISTS "Formats are viewable by everyone" ON game_formats;
 CREATE POLICY "Formats are viewable by everyone"
   ON game_formats FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Anyone can manage formats" ON game_formats;
-CREATE POLICY "Anyone can manage formats"
-  ON game_formats FOR ALL USING (true);
+DROP POLICY IF EXISTS "Admins can manage formats" ON game_formats;
+CREATE POLICY "Admins can manage formats"
+  ON game_formats FOR ALL USING (auth.role() = 'authenticated' AND EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- TOURNAMENTS
 CREATE TABLE IF NOT EXISTS tournaments (
@@ -139,13 +158,17 @@ DROP POLICY IF EXISTS "Tournaments are viewable by everyone" ON tournaments;
 CREATE POLICY "Tournaments are viewable by everyone"
   ON tournaments FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Anyone can create tournaments" ON tournaments;
-CREATE POLICY "Anyone can create tournaments"
-  ON tournaments FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can create tournaments" ON tournaments;
+CREATE POLICY "Authenticated users can create tournaments"
+  ON tournaments FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS "Anyone can update tournaments" ON tournaments;
-CREATE POLICY "Anyone can update tournaments"
-  ON tournaments FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Creators can update their tournaments" ON tournaments;
+CREATE POLICY "Creators can update their tournaments"
+  ON tournaments FOR UPDATE USING (auth.uid() = created_by);
+
+DROP POLICY IF EXISTS "Admins can update any tournament" ON tournaments;
+CREATE POLICY "Admins can update any tournament"
+  ON tournaments FOR UPDATE USING (auth.role() = 'authenticated' AND EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- TOURNAMENT GROUPS
 CREATE TABLE IF NOT EXISTS tournament_groups (
@@ -161,9 +184,9 @@ DROP POLICY IF EXISTS "Groups are viewable by everyone" ON tournament_groups;
 CREATE POLICY "Groups are viewable by everyone"
   ON tournament_groups FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Anyone can manage groups" ON tournament_groups;
-CREATE POLICY "Anyone can manage groups"
-  ON tournament_groups FOR ALL USING (true);
+DROP POLICY IF EXISTS "Authenticated users can manage groups" ON tournament_groups;
+CREATE POLICY "Authenticated users can manage groups"
+  ON tournament_groups FOR ALL USING (auth.role() = 'authenticated');
 
 -- TOURNAMENT PARTICIPANTS
 CREATE TABLE IF NOT EXISTS tournament_participants (
@@ -182,13 +205,13 @@ DROP POLICY IF EXISTS "Participants are viewable by everyone" ON tournament_part
 CREATE POLICY "Participants are viewable by everyone"
   ON tournament_participants FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Anyone can join tournaments" ON tournament_participants;
-CREATE POLICY "Anyone can join tournaments"
-  ON tournament_participants FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can join tournaments" ON tournament_participants;
+CREATE POLICY "Authenticated users can join tournaments"
+  ON tournament_participants FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS "Anyone can leave tournaments" ON tournament_participants;
-CREATE POLICY "Anyone can leave tournaments"
-  ON tournament_participants FOR DELETE USING (true);
+DROP POLICY IF EXISTS "Users can leave tournaments" ON tournament_participants;
+CREATE POLICY "Users can leave tournaments"
+  ON tournament_participants FOR DELETE USING (auth.uid() = user_id);
 
 -- MATCHES
 CREATE TABLE IF NOT EXISTS matches (
@@ -211,13 +234,13 @@ DROP POLICY IF EXISTS "Matches are viewable by everyone" ON matches;
 CREATE POLICY "Matches are viewable by everyone"
   ON matches FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Anyone can update matches" ON matches;
-CREATE POLICY "Anyone can update matches"
-  ON matches FOR UPDATE WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can update matches" ON matches;
+CREATE POLICY "Authenticated users can update matches"
+  ON matches FOR UPDATE WITH CHECK (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS "Anyone can insert matches" ON matches;
-CREATE POLICY "Anyone can insert matches"
-  ON matches FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can insert matches" ON matches;
+CREATE POLICY "Authenticated users can insert matches"
+  ON matches FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 -- Enable Real-time for all tables
 DO $$

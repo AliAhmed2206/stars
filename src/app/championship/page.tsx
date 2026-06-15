@@ -25,7 +25,7 @@ export default function ChampionshipPage() {
   const [formats, setFormats] = useState<GameFormat[]>([])
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [events, setEvents] = useState<Event[]>([])
-  const { profile } = useProfile()
+  const { profile, user } = useProfile()
   const [loading, setLoading] = useState(true)
   const [showWizard, setShowWizard] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>("tournaments")
@@ -98,7 +98,7 @@ export default function ChampionshipPage() {
   }
 
   async function createTournament() {
-    if (!profile || !selectedGame || !selectedFormat || !tournamentName.trim()) return
+    if (!user || !selectedGame || !selectedFormat || !tournamentName.trim()) return
     setCreating(true)
     try {
       const { data: t, error } = await supabase.from("tournaments").insert([{
@@ -106,7 +106,7 @@ export default function ChampionshipPage() {
         name: tournamentName.trim(), description: tournamentDesc.trim() || null,
         prizes: prizes.trim() || null,
         max_participants: maxPlayers, settings: selectedFormat.settings,
-        status: "open", created_by: profile.id,
+        status: "open", created_by: user.id,
       }]).select().single()
       if (error) throw error
       if (selectedPlayers.length > 0) {
@@ -127,11 +127,11 @@ export default function ChampionshipPage() {
 
   async function handleEventSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!profile) return
+    if (!user) return
     await supabase.from("events").insert([{
       title: eventTitle, description: eventDesc || null,
       date: eventDate, time: eventTime || null, location: eventLocation || null,
-      created_by: profile.id,
+      created_by: user.id,
     }])
     setEventTitle(""); setEventDesc(""); setEventDate(""); setEventTime(""); setEventLocation("")
     setShowEventForm(false)
@@ -163,12 +163,12 @@ export default function ChampionshipPage() {
             <h1 className="text-3xl font-bold"><span className="text-gradient">Stars</span> Championship</h1>
             <p className="text-muted text-sm mt-1">Tournaments, events & glory</p>
           </div>
-          {profile && activeTab === "tournaments" && (
+          {user && activeTab === "tournaments" && (
             <button onClick={() => setShowWizard(!showWizard)} className="btn-primary px-6 py-3 rounded-2xl text-sm flex items-center gap-2 animate-glow">
               <Plus className="w-5 h-5" /> New Tournament
             </button>
           )}
-          {profile && activeTab === "events" && (
+          {user && activeTab === "events" && (
             <button onClick={() => setShowEventForm(!showEventForm)} className="btn-primary px-6 py-3 rounded-2xl text-sm flex items-center gap-2 animate-glow">
               <Plus className="w-5 h-5" /> New Event
             </button>
@@ -397,7 +397,7 @@ export default function ChampionshipPage() {
                 <Trophy className="w-16 h-16 text-muted mx-auto mb-4 animate-float" />
                 <p className="text-lg font-semibold mb-2">No tournaments yet</p>
                 <p className="text-sm text-muted mb-6">Create the first one and let the games begin!</p>
-                {profile && (
+                {user && (
                   <button onClick={() => setShowWizard(true)} className="btn-primary px-8 py-3 rounded-2xl text-sm inline-flex items-center gap-2 animate-glow">
                     <Plus className="w-5 h-5" /> Create First Tournament
                   </button>
@@ -476,7 +476,7 @@ export default function ChampionshipPage() {
                 <CalendarDays className="w-16 h-16 text-muted mx-auto mb-4 animate-float" />
                 <p className="text-lg font-semibold mb-2">No events planned</p>
                 <p className="text-sm text-muted mb-6">Plan the next hangout!</p>
-                {profile && (
+                {user && (
                   <button onClick={() => setShowEventForm(true)} className="btn-primary px-8 py-3 rounded-2xl text-sm inline-flex items-center gap-2 animate-glow">
                     <Plus className="w-5 h-5" /> Create First Event
                   </button>
@@ -515,7 +515,7 @@ export default function ChampionshipPage() {
                               )}
                             </div>
                           </div>
-                          {profile && (
+                          {user && (
                             <button onClick={() => handleEventDelete(event.id)}
                               className="opacity-0 group-hover:opacity-100 p-2 rounded-xl hover:bg-danger/10 text-muted hover:text-danger transition-all">
                               <Trash2 className="w-4 h-4" />
