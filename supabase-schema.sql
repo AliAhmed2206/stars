@@ -90,21 +90,18 @@ CREATE TABLE IF NOT EXISTS games (
 );
 
 -- Remove duplicate games (safe to re-run)
-DELETE FROM games a USING (
-  SELECT MIN(id) as id, name FROM games GROUP BY name HAVING COUNT(*) > 1
-) b WHERE a.name = b.name AND a.id <> b.id;
+DELETE FROM games WHERE id IN (
+  SELECT id FROM (
+    SELECT id, ROW_NUMBER() OVER (PARTITION BY name ORDER BY id) AS rn
+    FROM games
+  ) dup WHERE dup.rn > 1
+);
 
 -- Add unique constraint if not exists
 DO $$ BEGIN
   ALTER TABLE games ADD CONSTRAINT games_name_unique UNIQUE (name);
 EXCEPTION WHEN duplicate_table THEN NULL;
 END $$;
-  category TEXT NOT NULL CHECK (category IN ('playstation', 'football', 'padel', 'esports', 'card_games')),
-  icon TEXT DEFAULT '',
-  image_url TEXT DEFAULT '',
-  description TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
 
 ALTER TABLE games ENABLE ROW LEVEL SECURITY;
 
@@ -142,9 +139,12 @@ CREATE TABLE IF NOT EXISTS game_formats (
 ALTER TABLE game_formats ENABLE ROW LEVEL SECURITY;
 
 -- Add unique constraint if upgrading from v1
-DELETE FROM game_formats a USING (
-  SELECT MIN(id) as id, game_id, name FROM game_formats GROUP BY game_id, name HAVING COUNT(*) > 1
-) b WHERE a.game_id = b.game_id AND a.name = b.name AND a.id <> b.id;
+DELETE FROM game_formats WHERE id IN (
+  SELECT id FROM (
+    SELECT id, ROW_NUMBER() OVER (PARTITION BY game_id, name ORDER BY id) AS rn
+    FROM game_formats
+  ) dup WHERE dup.rn > 1
+);
 DO $$ BEGIN
   ALTER TABLE game_formats ADD CONSTRAINT game_formats_game_id_name_key UNIQUE (game_id, name);
 EXCEPTION WHEN duplicate_table THEN NULL;
