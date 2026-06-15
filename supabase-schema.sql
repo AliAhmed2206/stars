@@ -290,17 +290,17 @@ END $$;
 
 -- Insert default games with images (skip if already exist)
 INSERT INTO games (name, category, icon, image_url, description) VALUES
-  ('PlayStation 5', 'playstation', '🎮', 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=800&fit=crop', 'Console tournaments — FC 26, Tekken, and more'),
-  ('FC 26', 'playstation', '⚽', 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&fit=crop', 'EA Sports FC 26 on PS5'),
-  ('Football 11v11', 'football', '🏟️', 'https://images.unsplash.com/photo-1511882150382-421056c89033?w=800&fit=crop', 'Full 11-a-side football matches'),
-  ('Football 5v5', 'football', '⚽', 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&fit=crop', 'Small-sided 5-a-side football'),
-  ('Padel', 'padel', '🎾', 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&fit=crop', 'Padel doubles tournaments'),
-  ('Brawl Stars', 'esports', '⭐', 'https://cdn.supercell.com/supercell.com/2412191423/supercell.com/images/1b62c33b3a89aaf238d19b7ebd977ca5/games_brawlstars_hero.png', '3v3 Brawl Ball, Gem Grab & Showdown'),
-  ('eFootball', 'esports', '⚽', 'https://images.unsplash.com/photo-1526413232644-8a40f03cc03b?w=800&fit=crop', 'Konami eFootball competitive'),
-  ('FC Mobile', 'esports', '📱', 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&fit=crop', 'EA FC Mobile — on your phone'),
-  ('Skrew', 'card_games', '🃏', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&fit=crop', 'The classic Skrew card game'),
-  ('Casino (Poker)', 'card_games', '🃏', 'https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=800&fit=crop', 'Texas Hold''em Poker'),
-  ('Casino (Blackjack)', 'card_games', '🃏', 'https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?w=800&fit=crop', 'Classic Blackjack')
+  ('PlayStation 5', 'playstation', '🎮', '/images/games/casino.webp', 'Console tournaments — FC 26, Tekken, and more'),
+  ('FC 26', 'playstation', '⚽', '/images/games/fc-mobile-26.png', 'EA Sports FC 26 on PS5'),
+  ('Football 11v11', 'football', '🏟️', '/images/games/football.webp', 'Full 11-a-side football matches'),
+  ('Football 5v5', 'football', '⚽', '/images/games/football.webp', 'Small-sided 5-a-side football'),
+  ('Padel', 'padel', '🎾', '/images/games/padel.webp', 'Padel doubles tournaments'),
+  ('Brawl Stars', 'esports', '⭐', '/images/games/brawlstars.webp', '3v3 Brawl Ball, Gem Grab & Showdown'),
+  ('eFootball', 'esports', '⚽', '/images/games/efootball.webp', 'Konami eFootball competitive'),
+  ('FC Mobile', 'esports', '📱', '/images/games/fc-mobile-26.png', 'EA FC Mobile — on your phone'),
+  ('Skrew', 'card_games', '🃏', '/images/games/casino.webp', 'The classic Skrew card game'),
+  ('Casino (Poker)', 'card_games', '🃏', '/images/games/casino.webp', 'Texas Hold''em Poker'),
+  ('Casino (Blackjack)', 'card_games', '🃏', '/images/games/casino.webp', 'Classic Blackjack')
 ON CONFLICT (name) DO UPDATE SET image_url = EXCLUDED.image_url, description = EXCLUDED.description;
 
 -- Insert default game formats (skip duplicates)
