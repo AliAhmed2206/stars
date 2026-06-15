@@ -1,5 +1,10 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
+import type { Game } from "@/lib/types"
 import Link from "next/link"
-import { Sparkles, CalendarDays, Trophy, Gamepad2, Users, ArrowRight, Star } from "lucide-react"
+import { Sparkles, CalendarDays, Trophy, Gamepad2, Users, ArrowRight, Star, TrophyIcon } from "lucide-react"
 
 const quickLinks = [
   {
@@ -32,18 +37,16 @@ const quickLinks = [
   },
 ]
 
-const featuredGames = [
-  { name: "Brawl Stars", emoji: "⭐", category: "Esports" },
-  { name: "eFootball", emoji: "⚽", category: "Esports" },
-  { name: "FC Mobile", emoji: "📱", category: "Esports" },
-  { name: "PlayStation", emoji: "🎮", category: "Console" },
-  { name: "Football", emoji: "🏟️", category: "Sports" },
-  { name: "Padel", emoji: "🎾", category: "Sports" },
-  { name: "Skrew", emoji: "🃏", category: "Card Games" },
-  { name: "Casino", emoji: "🎰", category: "Card Games" },
-]
-
 export default function Home() {
+  const [featuredGames, setFeaturedGames] = useState<Game[]>([])
+  const supabase = createClient()
+
+  useEffect(() => {
+    supabase.from("games").select("*").limit(8).order("name").then(({ data }) => {
+      if (data) setFeaturedGames(data as Game[])
+    })
+  }, [])
+
   return (
     <div className="min-h-[calc(100vh-8rem)]">
       <section className="relative overflow-hidden py-20 sm:py-32">
@@ -102,16 +105,29 @@ export default function Home() {
         </h2>
         <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-4">
           {featuredGames.map((game) => (
-            <div
-              key={game.name}
-              className="flex-shrink-0 glass rounded-2xl px-5 py-4 flex items-center gap-3 glass-hover"
+            <Link
+              key={game.id}
+              href="/championship"
+              className="flex-shrink-0 w-48 glass rounded-2xl overflow-hidden glass-hover group"
             >
-              <span className="text-2xl">{game.emoji}</span>
-              <div>
-                <p className="font-semibold text-sm">{game.name}</p>
-                <p className="text-xs text-muted">{game.category}</p>
+              {game.image_url && (
+                <div className="h-24 bg-card overflow-hidden">
+                  <img
+                    src={game.image_url}
+                    alt={game.name}
+                    className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-opacity"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                </div>
+              )}
+              <div className="p-4 flex items-center gap-3">
+                <span className="text-xl">{game.icon}</span>
+                <div>
+                  <p className="font-semibold text-sm">{game.name}</p>
+                  <p className="text-xs text-muted capitalize">{game.category}</p>
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

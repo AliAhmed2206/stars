@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useEffect, useState } from "react"
-import { Menu, X, Sparkles, CalendarDays, Trophy, Gamepad2, Users, User } from "lucide-react"
+import { Menu, X, Sparkles, CalendarDays, Trophy, Gamepad2, Users, User, Shield } from "lucide-react"
 import type { User as UserType } from "@supabase/supabase-js"
 
 const navItems = [
@@ -19,13 +19,28 @@ const navItems = [
 export default function Navbar() {
   const pathname = usePathname()
   const [user, setUser] = useState<UserType | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    async function load() {
+      const { data } = await supabase.auth.getUser()
+      setUser(data.user)
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .single()
+        if (profile) setIsAdmin(profile.role === "admin")
+      }
+    }
+    load()
+
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      if (!session?.user) setIsAdmin(false)
     })
     return () => listener?.subscription.unsubscribe()
   }, [])
@@ -60,6 +75,20 @@ export default function Navbar() {
                 </Link>
               )
             })}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className={cn(
+                  "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2",
+                  pathname === "/admin"
+                    ? "bg-white/10 text-accent"
+                    : "text-muted hover:text-foreground hover:bg-white/5"
+                )}
+              >
+                <Shield className="w-4 h-4" />
+                Admin
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -112,6 +141,21 @@ export default function Navbar() {
                 </Link>
               )
             })}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
+                  pathname === "/admin"
+                    ? "bg-white/10 text-accent"
+                    : "text-muted hover:text-foreground hover:bg-white/5"
+                )}
+              >
+                <Shield className="w-4 h-4" />
+                Admin
+              </Link>
+            )}
           </div>
         </div>
       )}

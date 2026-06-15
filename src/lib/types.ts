@@ -2,6 +2,7 @@ export interface Profile {
   id: string
   username: string
   avatar_url: string | null
+  role: "user" | "admin"
   created_at: string
 }
 
@@ -21,20 +22,46 @@ export interface Game {
   name: string
   category: "playstation" | "football" | "padel" | "esports" | "card_games"
   icon: string
+  image_url: string
+  description: string
+  created_at: string
+}
+
+export interface GameFormat {
+  id: string
+  game_id: string
+  name: string
+  type: "knockout" | "group_knockout" | "showdown" | "round_robin" | "teams"
+  min_players: number
+  max_players: number
+  players_per_team: number
+  description: string
+  settings: Record<string, any>
   created_at: string
 }
 
 export interface Tournament {
   id: string
   game_id: string
+  format_id: string | null
   name: string
   description: string | null
   start_date: string | null
   end_date: string | null
-  status: "upcoming" | "ongoing" | "completed"
+  status: "upcoming" | "open" | "ongoing" | "completed"
+  max_participants: number
+  settings: Record<string, any>
   created_by: string
   created_at: string
   game?: Game
+  format?: GameFormat
+}
+
+export interface TournamentGroup {
+  id: string
+  tournament_id: string
+  name: string
+  created_at: string
 }
 
 export interface TournamentParticipant {
@@ -42,6 +69,7 @@ export interface TournamentParticipant {
   tournament_id: string
   user_id: string
   seed: number
+  group_id: string | null
   created_at: string
   profile?: Profile
 }
@@ -49,6 +77,7 @@ export interface TournamentParticipant {
 export interface Match {
   id: string
   tournament_id: string
+  group_id: string | null
   round: number
   player1_id: string | null
   player2_id: string | null
